@@ -1,0 +1,676 @@
+1. First Come First Serve (FCFS)
+Code:
+#include <stdio.h>
+
+void fcfs(int n, int arrival[], int burst[]) {
+    int wait[n], turnaround[n], completion[n];
+    int total_wait = 0, total_turnaround = 0;
+
+    completion[0] = arrival[0] + burst[0];
+    wait[0] = 0;
+    turnaround[0] = burst[0];
+
+    for (int i = 1; i < n; i++) {
+        if (arrival[i] > completion[i - 1]) {
+            completion[i] = arrival[i] + burst[i];
+        } else {
+            completion[i] = completion[i - 1] + burst[i];
+        }
+        turnaround[i] = completion[i] - arrival[i];
+        wait[i] = turnaround[i] - burst[i];
+    }
+
+    printf("\nProcess\tArrival\tBurst\tCompletion\tWaiting\tTurnaround\n");
+    for (int i = 0; i < n; i++) {
+        printf("%d\t%d\t%d\t%d\t\t%d\t%d\n", i + 1, arrival[i], burst[i], completion[i], wait[i], turnaround[i]);
+        total_wait += wait[i];
+        total_turnaround += turnaround[i];
+    }
+
+    printf("\nAverage Waiting Time: %.2f", (float)total_wait / n);
+    printf("\nAverage Turnaround Time: %.2f\n", (float)total_turnaround / n);
+}
+
+int main() {
+    int n;
+    printf("Enter the number of processes: ");
+    scanf("%d", &n);
+
+    int arrival[n], burst[n];
+    printf("Enter arrival times and burst times:\n");
+    for (int i = 0; i < n; i++) {
+        printf("Process %d - Arrival: ", i + 1);
+        scanf("%d", &arrival[i]);
+        printf("Process %d - Burst: ", i + 1);
+        scanf("%d", &burst[i]);
+    }
+
+    fcfs(n, arrival, burst);
+    return 0;
+}
+2. Shortest Job First (Non-Preemptive)
+Code:
+#include <stdio.h>
+
+void sjf(int n, int arrival[], int burst[]) {
+    int wait[n], turnaround[n], completion[n], visited[n];
+    int total_wait = 0, total_turnaround = 0;
+
+    for (int i = 0; i < n; i++) visited[i] = 0;
+
+    int time = 0, completed = 0;
+
+    while (completed < n) {
+        int min_burst = 100000, idx = -1;
+
+        for (int i = 0; i < n; i++) {
+            if (arrival[i] <= time && !visited[i] && burst[i] < min_burst) {
+                min_burst = burst[i];
+                idx = i;
+            }
+        }
+
+        if (idx != -1) {
+            completion[idx] = time + burst[idx];
+            turnaround[idx] = completion[idx] - arrival[idx];
+            wait[idx] = turnaround[idx] - burst[idx];
+
+            time = completion[idx];
+            visited[idx] = 1;
+            completed++;
+        } else {
+            time++;
+        }
+    }
+
+    printf("\nProcess\tArrival\tBurst\tCompletion\tWaiting\tTurnaround\n");
+    for (int i = 0; i < n; i++) {
+        printf("%d\t%d\t%d\t%d\t\t%d\t%d\n", i + 1, arrival[i], burst[i], completion[i], wait[i], turnaround[i]);
+        total_wait += wait[i];
+        total_turnaround += turnaround[i];
+    }
+
+    printf("\nAverage Waiting Time: %.2f", (float)total_wait / n);
+    printf("\nAverage Turnaround Time: %.2f\n", (float)total_turnaround / n);
+}
+
+int main() {
+    int n;
+    printf("Enter the number of processes: ");
+    scanf("%d", &n);
+
+    int arrival[n], burst[n];
+    printf("Enter arrival times and burst times:\n");
+    for (int i = 0; i < n; i++) {
+        printf("Process %d - Arrival: ", i + 1);
+        scanf("%d", &arrival[i]);
+        printf("Process %d - Burst: ", i + 1);
+        scanf("%d", &burst[i]);
+    }
+
+    sjf(n, arrival, burst);
+    return 0;
+}
+3. Round Robin
+Code:
+#include <stdio.h>
+
+void round_robin(int n, int arrival[], int burst[], int quantum) {
+    int remaining[n], wait[n], turnaround[n];
+    int time = 0, completed = 0;
+    int total_wait = 0, total_turnaround = 0;
+
+    for (int i = 0; i < n; i++) remaining[i] = burst[i];
+
+    while (completed < n) {
+        int executed = 0;
+        for (int i = 0; i < n; i++) {
+            if (arrival[i] <= time && remaining[i] > 0) {
+                if (remaining[i] <= quantum) {
+                    time += remaining[i];
+                    remaining[i] = 0;
+                    turnaround[i] = time - arrival[i];
+                    wait[i] = turnaround[i] - burst[i];
+                    completed++;
+                } else {
+                    time += quantum;
+                    remaining[i] -= quantum;
+                }
+                executed = 1;
+            }
+        }
+        if (!executed) time++;
+    }
+
+    printf("\nProcess\tArrival\tBurst\tWaiting\tTurnaround\n");
+    for (int i = 0; i < n; i++) {
+        printf("%d\t%d\t%d\t%d\t%d\n", i + 1, arrival[i], burst[i], wait[i], turnaround[i]);
+        total_wait += wait[i];
+        total_turnaround += turnaround[i];
+    }
+
+    printf("\nAverage Waiting Time: %.2f", (float)total_wait / n);
+    printf("\nAverage Turnaround Time: %.2f\n", (float)total_turnaround / n);
+}
+
+int main() {
+    int n, quantum;
+    printf("Enter the number of processes: ");
+    scanf("%d", &n);
+
+    int arrival[n], burst[n];
+    printf("Enter arrival times and burst times:\n");
+    for (int i = 0; i < n; i++) {
+        printf("Process %d - Arrival: ", i + 1);
+        scanf("%d", &arrival[i]);
+        printf("Process %d - Burst: ", i + 1);
+        scanf("%d", &burst[i]);
+    }
+
+    printf("Enter time quantum: ");
+    scanf("%d", &quantum);
+
+    round_robin(n, arrival, burst, quantum);
+    return 0;
+}
+
+Bunker Algorithm:
+Code:
+#include <stdio.h>
+#include <stdbool.h>
+
+// Function to check if the system is in a safe state
+bool isSafeState(int processes, int resources, int available[], int max[][resources], int allocation[][resources]) {
+    int need[processes][resources];
+    int work[resources];
+    bool finish[processes];
+
+    // Calculate the Need matrix
+    for (int i = 0; i < processes; i++) {
+        for (int j = 0; j < resources; j++) {
+            need[i][j] = max[i][j] - allocation[i][j];
+        }
+    }
+
+    // Initialize Work and Finish arrays
+    for (int i = 0; i < resources; i++) {
+        work[i] = available[i];
+    }
+    for (int i = 0; i < processes; i++) {
+        finish[i] = false;
+    }
+
+    // Safety algorithm
+    int count = 0;
+    while (count < processes) {
+        bool found = false;
+        for (int i = 0; i < processes; i++) {
+            if (!finish[i]) {
+                bool canAllocate = true;
+
+                for (int j = 0; j < resources; j++) {
+                    if (need[i][j] > work[j]) {
+                        canAllocate = false;
+                        break;
+                    }
+                }
+
+                if (canAllocate) {
+                    for (int j = 0; j < resources; j++) {
+                        work[j] += allocation[i][j];
+                    }
+                    finish[i] = true;
+                    found = true;
+                    count++;
+                }
+            }
+        }
+
+        if (!found) {
+            return false; // Deadlock detected
+        }
+    }
+
+    return true; // Safe state
+}
+
+int main() {
+    int processes, resources;
+
+    printf("Enter the number of processes: ");
+    scanf("%d", &processes);
+
+    printf("Enter the number of resources: ");
+    scanf("%d", &resources);
+
+    int available[resources];
+    int max[processes][resources];
+    int allocation[processes][resources];
+
+    printf("Enter the Available resources:\n");
+    for (int i = 0; i < resources; i++) {
+        scanf("%d", &available[i]);
+    }
+
+    printf("Enter the Max resource matrix:\n");
+    for (int i = 0; i < processes; i++) {
+        for (int j = 0; j < resources; j++) {
+            scanf("%d", &max[i][j]);
+        }
+    }
+
+    printf("Enter the Allocation matrix:\n");
+    for (int i = 0; i < processes; i++) {
+        for (int j = 0; j < resources; j++) {
+            scanf("%d", &allocation[i][j]);
+        }
+    }
+
+    if (isSafeState(processes, resources, available, max, allocation)) {
+        printf("The system is in a SAFE state.\n");
+    } else {
+        printf("The system is in an UNSAFE state (deadlock may occur).\n");
+    }
+
+    return 0;
+}
+
+Thread:
+Create a program that spawns multiple threads. Each thread should perform a specific task (e.g., printing numbers, calculating a sum, etc.). Implement thread creation, proper synchronization, and joining the threads to ensure the main program waits for all threads to finish before terminating.
+Code:
+#include <stdio.h>
+#include <pthread.h>
+#include <stdlib.h>
+
+#define NUM_THREADS 3
+
+typedef struct {
+    int start;
+    int end;
+} ThreadData;
+
+// Function executed by each thread
+void *print_and_sum(void *arg) {
+    ThreadData *data = (ThreadData *)arg; // Retrieve the thread data
+    int start = data->start;
+    int end = data->end;
+    int sum = 0;
+
+    for (int i = start; i <= end; i++) {
+        printf("Thread printing: %d\n", i);
+        sum += i;
+    }
+
+    printf("Thread sum from %d to %d: %d\n", start, end, sum);
+    return NULL;
+}
+
+int main() {
+    pthread_t threads[NUM_THREADS]; // Array to hold thread IDs
+    ThreadData thread_data[NUM_THREADS]; // Array to hold thread-specific data
+
+    // Create threads
+    for (int i = 0; i < NUM_THREADS; i++) {
+        thread_data[i].start = i * 10 + 1; // Start number for the thread
+        thread_data[i].end = (i + 1) * 10; // End number for the thread
+
+        int result = pthread_create(&threads[i], NULL, print_and_sum, &thread_data[i]);
+        if (result != 0) {
+            perror("Thread creation failed");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    // Wait for all threads to complete
+    for (int i = 0; i < NUM_THREADS; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    printf("Main thread: All threads have finished execution.\n");
+    return 0;
+}
+
+Write a program that simulates the readers-writer problem. Implement multiple reader threads and writer threads. Readers should be able to read simultaneously unless a writer wants to write. Ensure proper synchronization to maintain data integrity.
+Code:
+#include <stdio.h>
+#include <pthread.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+int data = 0;
+int reader_count = 0;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t read_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void *reader(void *arg) {
+    int reader_id = *(int *)arg;
+    pthread_mutex_lock(&read_mutex);
+    reader_count++;
+    if (reader_count == 1) {
+        pthread_mutex_lock(&mutex);
+    }
+    pthread_mutex_unlock(&read_mutex);
+
+    printf("Reader %d is reading data: %d\n", reader_id, data);
+    usleep(rand() % 1000);
+
+    pthread_mutex_lock(&read_mutex);
+    reader_count--;
+    if (reader_count == 0) {
+        pthread_mutex_unlock(&mutex);
+    }
+    pthread_mutex_unlock(&read_mutex);
+    return NULL;
+}
+
+void *writer(void *arg) {
+    int writer_id = *(int *)arg;
+    pthread_mutex_lock(&mutex);
+    data++;
+    printf("Writer %d is writing data: %d\n", writer_id, data);
+    usleep(rand() % 1000);
+    pthread_mutex_unlock(&mutex);
+    return NULL;
+}
+
+int main() {
+    int num_readers, num_writers;
+
+    printf("Enter the number of readers: ");
+    scanf("%d", &num_readers);
+
+    printf("Enter the number of writers: ");
+    scanf("%d", &num_writers);
+
+    printf("Enter the initial value of data: ");
+    scanf("%d", &data);
+
+    pthread_t readers[num_readers];
+    pthread_t writers[num_writers];
+    int reader_ids[num_readers];
+    int writer_ids[num_writers];
+
+    for (int i = 0; i < num_readers; i++) {
+        reader_ids[i] = i + 1;
+        if (pthread_create(&readers[i], NULL, reader, &reader_ids[i]) != 0) {
+            perror("Failed to create reader thread");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    for (int i = 0; i < num_writers; i++) {
+        writer_ids[i] = i + 1;
+        if (pthread_create(&writers[i], NULL, writer, &writer_ids[i]) != 0) {
+            perror("Failed to create writer thread");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    for (int i = 0; i < num_readers; i++) {
+        pthread_join(readers[i], NULL);
+    }
+
+    for (int i = 0; i < num_writers; i++) {
+        pthread_join(writers[i], NULL);
+    }
+
+    printf("Main thread: All threads have finished execution.\n");
+    return 0;
+}
+
+File Allocation:
+1.	Contiguous Allocation (Random Selection of a Block)
+Code:
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+#define MAX_BLOCKS 100
+
+int memory[MAX_BLOCKS];
+
+void contiguousAllocation(int numFiles, int fileSize[]) {
+    for (int i = 0; i < numFiles; i++) {
+        int startBlock = rand() % (MAX_BLOCKS - fileSize[i]);
+        int canAllocate = 1;
+
+        // Check if space is available for contiguous allocation
+        for (int j = startBlock; j < startBlock + fileSize[i]; j++) {
+            if (memory[j] == 1) {
+                canAllocate = 0;
+                break;
+            }
+        }
+
+        if (canAllocate) {
+            // Allocate memory for the file
+            for (int j = startBlock; j < startBlock + fileSize[i]; j++) {
+                memory[j] = 1;
+            }
+            printf("File %d allocated from block %d to block %d\n", i + 1, startBlock, startBlock + fileSize[i] - 1);
+        } else {
+            printf("File %d could not be allocated due to lack of space.\n", i + 1);
+        }
+    }
+}
+
+int main() {
+    int numFiles;
+    srand(time(NULL)); // For random number generation
+
+    printf("Enter the number of files: ");
+    scanf("%d", &numFiles);
+
+    int fileSize[numFiles];
+    for (int i = 0; i < numFiles; i++) {
+        printf("Enter size of file %d: ", i + 1);
+        scanf("%d", &fileSize[i]);
+    }
+
+    // Initialize memory
+    for (int i = 0; i < MAX_BLOCKS; i++) {
+        memory[i] = 0; // 0 means free
+    }
+
+    contiguousAllocation(numFiles, fileSize);
+
+    return 0;
+}
+2.	Linked Allocation
+Code:
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+#define MAX_BLOCKS 100
+
+typedef struct Block {
+    int next;
+    int allocated;
+} Block;
+
+Block memory[MAX_BLOCKS];
+
+void linkedAllocation(int numFiles, int fileSize[]) {
+    for (int i = 0; i < numFiles; i++) {
+        int startBlock = rand() % MAX_BLOCKS;
+        int canAllocate = 1;
+        int lastBlock = startBlock;
+
+        // Check if the location and subsequent blocks are free
+        for (int j = 0; j < fileSize[i] - 1; j++) {
+            if (memory[lastBlock].allocated == 1) {
+                canAllocate = 0;
+                break;
+            }
+            lastBlock = (lastBlock + 1) % MAX_BLOCKS;
+        }
+
+        if (canAllocate) {
+            // Allocate the file
+            lastBlock = startBlock;
+            for (int j = 0; j < fileSize[i]; j++) {
+                memory[lastBlock].allocated = 1;
+                memory[lastBlock].next = (j == fileSize[i] - 1) ? -1 : (lastBlock + 1) % MAX_BLOCKS;
+                lastBlock = memory[lastBlock].next;
+            }
+            printf("File %d allocated starting at block %d\n", i + 1, startBlock);
+        } else {
+            printf("File %d could not be allocated due to lack of space.\n", i + 1);
+        }
+    }
+}
+
+int main() {
+    int numFiles;
+    srand(time(NULL));
+
+    printf("Enter the number of files: ");
+    scanf("%d", &numFiles);
+
+    int fileSize[numFiles];
+    for (int i = 0; i < numFiles; i++) {
+        printf("Enter size of file %d: ", i + 1);
+        scanf("%d", &fileSize[i]);
+    }
+
+    // Initialize memory
+    for (int i = 0; i < MAX_BLOCKS; i++) {
+        memory[i].allocated = 0;
+        memory[i].next = -1;
+    }
+
+    linkedAllocation(numFiles, fileSize);
+
+    return 0;
+}
+3.	 Sequential Allocation
+Code:
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+#define MAX_BLOCKS 100
+
+int memory[MAX_BLOCKS];
+
+void sequentialAllocation(int numFiles, int fileSize[]) {
+    for (int i = 0; i < numFiles; i++) {
+        int startBlock = rand() % MAX_BLOCKS;
+        int canAllocate = 1;
+
+        // Check if there is enough space in sequential blocks
+        if (startBlock + fileSize[i] <= MAX_BLOCKS) {
+            for (int j = startBlock; j < startBlock + fileSize[i]; j++) {
+                if (memory[j] == 1) {
+                    canAllocate = 0;
+                    break;
+                }
+            }
+        } else {
+            canAllocate = 0;
+        }
+
+        if (canAllocate) {
+            // Allocate memory sequentially
+            for (int j = startBlock; j < startBlock + fileSize[i]; j++) {
+                memory[j] = 1;
+            }
+            printf("File %d allocated from block %d to block %d\n", i + 1, startBlock, startBlock + fileSize[i] - 1);
+        } else {
+            printf("File %d could not be allocated due to lack of space.\n", i + 1);
+        }
+    }
+}
+
+int main() {
+    int numFiles;
+    srand(time(NULL)); // For random number generation
+
+    printf("Enter the number of files: ");
+    scanf("%d", &numFiles);
+
+    int fileSize[numFiles];
+    for (int i = 0; i < numFiles; i++) {
+        printf("Enter size of file %d: ", i + 1);
+        scanf("%d", &fileSize[i]);
+    }
+
+    // Initialize memory
+    for (int i = 0; i < MAX_BLOCKS; i++) {
+        memory[i] = 0; // 0 means free
+    }
+
+    sequentialAllocation(numFiles, fileSize);
+
+    return 0;
+}
+
+Fork:
+Code:
+#include <stdio.h>
+#include <unistd.h>
+
+int main() {
+    printf("Parent Process ID: %d\n", getpid());
+
+    pid_t pid = fork();
+
+    if (pid == 0) {
+        printf("Child Process ID: %d\n", getpid());
+    } else if (pid > 0) {
+        printf("Child Process ID printed by Parent: %d\n", pid);
+    } else {
+        printf("Fork failed!\n");
+        return 1;
+    }
+
+    return 0;
+}
+Code:2
+#include <stdio.h>
+#include <unistd.h>
+
+int main() {
+    pid_t pid;
+    int age;
+
+    pid = fork();
+
+    if (pid == 0) {
+        printf("Enter your age: ");
+        scanf("%d", &age);
+        printf("Child Process: Age = %d\n", age);
+    } else if (pid > 0) {
+        wait(NULL);
+        printf("Parent Process: Age = %d\n", age);
+    } else {
+        printf("Fork failed!\n");
+        return 1;
+    }
+
+    return 0;
+}
+
+Code 3:
+#include <stdio.h>
+#include <unistd.h>
+
+int main() {
+    printf("Parent Process ID: %d\n", getpid());
+
+    pid_t pid = fork();
+
+    if (pid == 0) {
+        printf("Child Process ID: %d\n", getpid());
+        printf("Child's Parent Process ID: %d\n", getppid());
+    } else if (pid > 0) {
+        printf("Parent's Process ID: %d\n", getpid());
+        printf("Parent's Child Process ID: %d\n", pid);
+    } else {
+        printf("Fork failed!\n");
+        return 1;
+    }
+
+    return 0;
+}
