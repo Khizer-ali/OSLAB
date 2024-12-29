@@ -1,0 +1,605 @@
+fcfs
+#include <stdio.h>
+
+int main() {
+    int n = 4;
+    int processID[] = {1, 2, 3, 4};
+    int arrivalTime[] = {0, 1, 2, 4};
+    int executionTime[] = {5, 3, 4, 2};
+    int completionTime[4], turnAroundTime[4], waitingTime[4];
+    int currentTime = 0;
+
+    // Calculate completion time, turnaround time, and waiting time
+    for (int i = 0; i < n; i++) {
+        if (currentTime < arrivalTime[i]) {
+            currentTime = arrivalTime[i]; // Process arrives later, so jump to its arrival time
+        }
+        completionTime[i] = currentTime + executionTime[i];
+        turnAroundTime[i] = completionTime[i] - arrivalTime[i];
+        waitingTime[i] = turnAroundTime[i] - executionTime[i];
+        currentTime = completionTime[i];
+    }
+
+    // Print the results
+    printf("Process ID\tArrival Time\tExecution Time\tCompletion Time\tTurn Around Time\tWaiting Time\n");
+    for (int i = 0; i < n; i++) {
+        printf("P%d\t\t%d\t\t%d\t\t%d\t\t%d\t\t\t%d\n",
+               processID[i], arrivalTime[i], executionTime[i],
+               completionTime[i], turnAroundTime[i], waitingTime[i]);
+    }
+
+    return 0;
+}
+
+
+
+sjf
+
+#include <stdio.h>
+
+int main() {
+    int n = 4;
+    int processID[] = {1, 2, 3, 4};
+    int arrivalTime[] = {0, 1, 2, 4};
+    int executionTime[] = {5, 3, 4, 2};
+    
+    int completionTime[4], turnAroundTime[4], waitingTime[4];
+    int isCompleted[4] = {0};
+    int currentTime = 0, completed = 0;
+
+    while (completed != n) {
+        int shortestJob = -1;
+        int minBurstTime = 1e9; // Initialize to a large number
+
+        // Find the shortest job that has arrived and is not completed
+        for (int i = 0; i < n; i++) {
+            if (arrivalTime[i] <= currentTime && !isCompleted[i] && executionTime[i] < minBurstTime) {
+                minBurstTime = executionTime[i];
+                shortestJob = i;
+            }
+        }
+
+        // If no job can be executed, increment currentTime (no job ready to execute)
+        if (shortestJob == -1) {
+            currentTime++;
+            continue;
+        }
+
+        // Process the selected shortest job
+        currentTime += executionTime[shortestJob];
+        completionTime[shortestJob] = currentTime;
+        turnAroundTime[shortestJob] = completionTime[shortestJob] - arrivalTime[shortestJob];
+        waitingTime[shortestJob] = turnAroundTime[shortestJob] - executionTime[shortestJob];
+        isCompleted[shortestJob] = 1;
+        completed++;
+    }
+
+    // Print the results
+    printf("Process ID\tArrival Time\tExecution Time\tCompletion Time\tTurn Around Time\tWaiting Time\n");
+    for (int i = 0; i < n; i++) {
+        printf("P%d\t\t%d\t\t%d\t\t%d\t\t%d\t\t\t%d\n", processID[i], arrivalTime[i], executionTime[i],
+               completionTime[i], turnAroundTime[i], waitingTime[i]);
+    }
+
+    return 0;
+}
+round robin
+#include <stdio.h>
+
+#define MAX 100
+
+// Function to find the waiting time and turn around time
+void findWaitingTime(int processes[], int n, int bt[], int wt[], int quantum) {
+    int remainingTime[MAX];
+    for (int i = 0; i < n; i++) {
+        remainingTime[i] = bt[i];
+    }
+
+    int t = 0; // Current time
+    while (1) {
+        int done = 1;
+        for (int i = 0; i < n; i++) {
+            if (remainingTime[i] > 0) {
+                done = 0;
+                if (remainingTime[i] > quantum) {
+                    t += quantum;
+                    remainingTime[i] -= quantum;
+                } else {
+                    t += remainingTime[i];
+                    wt[i] = t - bt[i];
+                    remainingTime[i] = 0;
+                }
+            }
+        }
+        if (done == 1) break;
+    }
+}
+
+// Function to find the turn around time
+void findTurnAroundTime(int processes[], int n, int bt[], int wt[], int tat[]) {
+    for (int i = 0; i < n; i++) {
+        tat[i] = bt[i] + wt[i]; // Turnaround time = Burst time + Waiting time
+    }
+}
+
+int main() {
+    int n, quantum;
+    printf("Enter the number of processes: ");
+    scanf("%d", &n);
+
+    int processes[n], burstTime[n], waitingTime[n], turnAroundTime[n];
+
+    // Read process IDs and burst times
+    printf("Enter the burst times for each process: \n");
+    for (int i = 0; i < n; i++) {
+        processes[i] = i + 1; // Process IDs starting from 1
+        printf("Burst time for process %d: ", processes[i]);
+        scanf("%d", &burstTime[i]);
+    }
+
+    printf("Enter the time quantum: ");
+    scanf("%d", &quantum);
+
+    // Calculate waiting time and turn around time
+    findWaitingTime(processes, n, burstTime, waitingTime, quantum);
+    findTurnAroundTime(processes, n, burstTime, waitingTime, turnAroundTime);
+
+    // Print the results
+    printf("\nProcess ID\tBurst Time\tWaiting Time\tTurn Around Time\n");
+    for (int i = 0; i < n; i++) {
+        printf("%d\t\t%d\t\t%d\t\t%d\n", processes[i], burstTime[i], waitingTime[i], turnAroundTime[i]);
+    }
+
+    return 0;
+}
+
+
+File Allocation(check)
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+#define MAX_BLOCKS 100 // Total number of blocks in the memory
+int blocks[MAX_BLOCKS]; // Array to track block allocation (0 = free, 1 = occupied)
+
+// Function to check if a block is free
+int isFree(int block) {
+    return blocks[block] == 0;
+}
+
+// Function to allocate a block
+void allocateBlock(int block) {
+    blocks[block] = 1; // Mark block as allocated
+}
+
+int main() {
+    int n; // Number of files
+    int length, block; // Length of file (number of blocks) and block to allocate
+    srand(time(NULL)); // Seed for random number generation
+
+    // Initialize all blocks as free
+    for (int i = 0; i < MAX_BLOCKS; i++) {
+        blocks[i] = 0;
+    }
+
+    printf("\n--- Post Lab Task: File Allocation ---\n");
+    printf("Enter the number of files: ");
+    scanf("%d", &n);
+
+    for (int i = 1; i <= n; i++) {
+        printf("\nFile %d:\n", i);
+        printf("Enter the memory requirement (in blocks): ");
+        scanf("%d", &length);
+        
+        int allocated = 0;
+        while (!allocated) {
+            block = rand() % MAX_BLOCKS; // Random block selection
+
+            // Check if the selected block and required locations are free
+            int free = 1;
+            for (int j = 0; j < length; j++) {
+                if (block + j >= MAX_BLOCKS || !isFree(block + j)) {
+                    free = 0;
+                    break;
+                }
+            }
+
+            if (free) {
+                // Allocate the required locations
+                for (int j = 0; j < length; j++) {
+                    allocateBlock(block + j);
+                }
+                printf("File %d allocated: Start Block = %d, Length = %d\n", i, block, length);
+                allocated = 1;
+            } else {
+                printf("Block %d is not free. Retrying...\n", block);
+            }
+        }
+    }
+
+    // Display final allocation status
+    printf("\n--- Final Memory Allocation Status ---\n");
+    for (int i = 0; i < MAX_BLOCKS; i++) {
+        printf("Block %d: %s\n", i, blocks[i] ? "Occupied" : "Free");
+    }
+
+    return 0;
+}
+File Allocation not check
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+#define MAX_BLOCKS 100 // Total number of blocks in the memory
+int blocks[MAX_BLOCKS]; // Array to track block allocation (0 = free, 1 = occupied)
+
+// Function to check if len consecutive blocks are free starting from start
+int checkFreeBlocks(int start, int len) {
+    for (int i = start; i < start + len; i++) {
+        if (i >= MAX_BLOCKS || blocks[i] == 1) {
+            return 0; // Not enough space or block is already occupied
+        }
+    }
+    return 1; // Blocks are free
+}
+
+// Function to allocate len blocks starting from start
+void allocateBlocks(int start, int len) {
+    for (int i = start; i < start + len; i++) {
+        blocks[i] = 1; // Mark block as allocated
+    }
+}
+
+int main() {
+    int n; // Number of files
+    int length, start; // Length of file (number of blocks) and starting block
+    srand(time(NULL)); // Seed for random number generation
+
+    // Initialize all blocks as free
+    for (int i = 0; i < MAX_BLOCKS; i++) {
+        blocks[i] = 0;
+    }
+
+    printf("\n--- File Allocation Simulation ---\n");
+    printf("Enter the number of files: ");
+    scanf("%d", &n);
+
+    for (int i = 1; i <= n; i++) {
+        printf("\nFile %d:\n", i);
+        printf("Enter the memory requirement (in blocks): ");
+        scanf("%d", &length);
+        int allocated = 0;
+
+        // Try to find free space
+        while (!allocated) {
+            start = rand() % MAX_BLOCKS; // Random starting block
+            if (checkFreeBlocks(start, length)) {
+                allocateBlocks(start, length);
+                printf("File %d allocated: Start Block = %d, Length = %d\n", i, start, length);
+                allocated = 1;
+            } else {
+                printf("Not enough space at start block %d. Retrying...\n", start);
+            }
+        }
+    }
+
+    // Display the allocation status
+    printf("\n--- Final Memory Allocation Status ---\n");
+    for (int i = 0; i < MAX_BLOCKS; i++) {
+        printf("Block %d: %s\n", i, blocks[i] ? "Occupied" : "Free");
+    }
+
+    return 0;
+}
+
+PID
+
+#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+int main() {
+printf(&quot;This is the parent process. Parent PID: %d\n&quot;, getpid());
+pid_t pid = fork();
+if (pid &gt; 0) {
+printf(&quot;In parent process. Child PID: %d\n&quot;, pid);
+} else if (pid == 0) {
+printf(&quot;In child process. Child PID: %d\n&quot;, getpid());
+} else {
+perror(&quot;Fork failed&quot;);
+return 1;
+}
+return 0;
+}
+
+
+child parentwifeexited
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+int main() {
+    int age;
+    pid_t pid;
+
+    pid = fork(); // Create a child process
+    if (pid < 0) {
+        perror("Fork failed");
+        return 1;
+    }
+    else if (pid == 0) {
+        // Child process
+        printf("Enter your age: ");
+        scanf("%d", &age);
+        exit(age); // Exit with age as the status
+    }
+    else {
+        // Parent process
+        int status;
+        wait(&status); // Wait for the child process to finish
+        if (WIFEXITED(status)) {
+            age = WEXITSTATUS(status); // Get the exit status (age)
+            printf("The age entered is: %d\n", age);
+        } else {
+            printf("Child process did not terminate normally.\n");
+        }
+    }
+
+    return 0;
+}
+
+
+Bankers Algorithm
+// Banker's Algorithm
+#include <stdio.h>
+int main()
+{
+    // P0, P1, P2, P3, P4 are the Process names here
+
+    int n, m, i, j, k;
+    n = 5; // Number of processes
+    m = 3; // Number of resources
+    int alloc[5][3] = { { 0, 1, 0 }, // P0    // Allocation Matrix
+                        { 2, 0, 0 }, // P1
+                        { 3, 0, 2 }, // P2
+                        { 2, 1, 1 }, // P3
+                        { 0, 0, 2 } }; // P4
+
+    int max[5][3] = { { 7, 5, 3 }, // P0    // MAX Matrix
+                      { 3, 2, 2 }, // P1
+                      { 9, 0, 2 }, // P2
+                      { 2, 2, 2 }, // P3
+                      { 4, 3, 3 } }; // P4
+
+    int avail[3] = { 3, 3, 2 }; // Available Resources
+
+    int f[n], ans[n], ind = 0;
+    for (k = 0; k < n; k++) {
+        f[k] = 0;
+    }
+    int need[n][m];
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < m; j++)
+            need[i][j] = max[i][j] - alloc[i][j];
+    }
+    int y = 0;
+    for (k = 0; k < 5; k++) {
+        for (i = 0; i < n; i++) {
+            if (f[i] == 0) {
+
+                int flag = 0;
+                for (j = 0; j < m; j++) {
+                    if (need[i][j] > avail[j]){
+                        flag = 1;
+                         break;
+                    }
+                }
+
+                if (flag == 0) {
+                    ans[ind++] = i;
+                    for (y = 0; y < m; y++)
+                        avail[y] += alloc[i][y];
+                    f[i] = 1;
+                }
+            }
+        }
+    }
+  
+      int flag = 1;
+      
+      for(int i=0;i<n;i++)
+    {
+      if(f[i]==0)
+      {
+        flag=0;
+         printf("The following system is not safe");
+        break;
+      }
+    }
+    
+      if(flag==1)
+    {
+      printf("Following is the SAFE Sequence\n");
+      for (i = 0; i < n - 1; i++)
+        printf(" P%d ->", ans[i]);
+      printf(" P%d", ans[n - 1]);
+    }
+    
+
+    return (0);
+
+    // This code is contributed by Deep Baldha (CandyZack)
+}
+
+
+Threads simple 
+#include <stdio.h>
+#include <pthread.h>
+#include <unistd.h>
+
+#define NUM_THREADS 3
+
+// Function for the first thread: Print numbers 1 to 5
+void *print_numbers(void *arg) {
+    for (int i = 1; i <= 5; i++) {
+        printf("Thread 1: %d\n", i);
+        sleep(1); // Simulate some work
+    }
+    return NULL;
+}
+
+// Function for the second thread: Calculate the sum of numbers 1 to 5
+void *calculate_sum(void *arg) {
+    int sum = 0;
+    for (int i = 1; i <= 5; i++) {
+        sum += i;
+    }
+    printf("Thread 2: Sum of numbers 1 to 5 is %d\n", sum);
+    return NULL;
+}
+
+// Function for the third thread: Print a task-specific message
+void *print_message(void *arg) {
+    printf("Thread 3: Performing a custom task\n");
+    sleep(2); // Simulate some work
+    return NULL;
+}
+
+int main() {
+    pthread_t threads[NUM_THREADS]; // Array to store thread identifiers
+
+    // Create threads
+    if (pthread_create(&threads[0], NULL, print_numbers, NULL) != 0) {
+        perror("Thread 1 creation failed");
+        return -1;
+    }
+
+    if (pthread_create(&threads[1], NULL, calculate_sum, NULL) != 0) {
+        perror("Thread 2 creation failed");
+        return -1;
+    }
+
+    if (pthread_create(&threads[2], NULL, print_message, NULL) != 0) {
+        perror("Thread 3 creation failed");
+        return -1;
+    }
+
+    // Wait for all threads to complete
+    for (int i = 0; i < NUM_THREADS; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    printf("Main thread: All threads have completed. Program exiting.\n");
+    return 0;
+}
+
+
+Threads 2 mutex
+#include <stdio.h>
+#include <pthread.h>
+#include <unistd.h>
+
+#define NUM_READERS 3
+#define NUM_WRITERS 2
+
+pthread_mutex_t mutex;       // Mutex for synchronizing access to the read_count
+pthread_mutex_t write_lock;  // Mutex to ensure writers have exclusive access
+int read_count = 0;          // Count of active readers
+int shared_data = 0;         // Shared data to be read/written
+
+// Reader function
+void *reader(void *arg) {
+    int reader_id = *(int *)arg;
+    while (1) {
+        // Entry section
+        pthread_mutex_lock(&mutex);
+        read_count++;
+        if (read_count == 1) {
+            pthread_mutex_lock(&write_lock); // First reader locks the write lock
+        }
+        pthread_mutex_unlock(&mutex);
+
+        // Critical section
+        printf("Reader %d: Read shared data = %d\n", reader_id, shared_data);
+        sleep(1); // Simulate reading time
+
+        // Exit section
+        pthread_mutex_lock(&mutex);
+        read_count--;
+        if (read_count == 0) {
+            pthread_mutex_unlock(&write_lock); // Last reader unlocks the write lock
+        }
+        pthread_mutex_unlock(&mutex);
+
+        sleep(1); // Simulate time between reads
+    }
+    return NULL;
+}
+
+// Writer function
+void *writer(void *arg) {
+    int writer_id = *(int *)arg;
+    while (1) {
+        // Entry section
+        pthread_mutex_lock(&write_lock);
+
+        // Critical section
+        shared_data++;
+        printf("Writer %d: Updated shared data to %d\n", writer_id, shared_data);
+        sleep(2); // Simulate writing time
+
+        // Exit section
+        pthread_mutex_unlock(&write_lock);
+
+        sleep(2); // Simulate time between writes
+    }
+    return NULL;
+}
+
+int main() {
+    pthread_t readers[NUM_READERS], writers[NUM_WRITERS];
+    int reader_ids[NUM_READERS], writer_ids[NUM_WRITERS];
+
+    // Initialize mutexes
+    pthread_mutex_init(&mutex, NULL);
+    pthread_mutex_init(&write_lock, NULL);
+
+    // Create reader threads
+    for (int i = 0; i < NUM_READERS; i++) {
+        reader_ids[i] = i + 1;
+        if (pthread_create(&readers[i], NULL, reader, &reader_ids[i]) != 0) {
+            perror("Reader thread creation failed");
+            return -1;
+        }
+    }
+
+    // Create writer threads
+    for (int i = 0; i < NUM_WRITERS; i++) {
+        writer_ids[i] = i + 1;
+        if (pthread_create(&writers[i], NULL, writer, &writer_ids[i]) != 0) {
+            perror("Writer thread creation failed");
+            return -1;
+        }
+    }
+
+    // Join threads (optional, as they run indefinitely in this example)
+    for (int i = 0; i < NUM_READERS; i++) {
+        pthread_join(readers[i], NULL);
+    }
+
+    for (int i = 0; i < NUM_WRITERS; i++) {
+        pthread_join(writers[i], NULL);
+    }
+
+    // Destroy mutexes
+    pthread_mutex_destroy(&mutex);
+    pthread_mutex_destroy(&write_lock);
+
+    printf("Main thread: Program exiting.\n");
+    return 0;
+}
